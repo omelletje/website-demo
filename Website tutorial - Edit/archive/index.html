@@ -1,0 +1,1105 @@
+<title>Planinzicht — Portaal (visiedemo)</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          paper: '#F6F3EC',
+          surface: '#FFFFFF',
+          ink: '#1B2A2C',
+          inkmuted: '#5C6B6C',
+          inkfaint: '#8A9695',
+          accent: { DEFAULT: '#1E3A3F', 50: '#EAF0EF', 100: '#D6E2E0', 500: '#2B4F55', 600: '#1E3A3F', 700: '#152A2E' },
+          sage: { DEFAULT: '#3F6B4F', 50: '#EAF2EC', 100: '#D2E4D8' },
+          ochre: { DEFAULT: '#A0722E', 50: '#F6EEDF', 100: '#EEDCBB' },
+          terracotta: { DEFAULT: '#AA4A3A', 50: '#F6E9E6', 100: '#EED0CA' },
+          line: '#E4DECF',
+        },
+        fontFamily: {
+          serif: ['"Fraunces"', 'ui-serif', 'Georgia', 'serif'],
+          sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        },
+        boxShadow: {
+          card: '0 1px 2px rgba(27,42,44,0.05), 0 10px 28px -14px rgba(27,42,44,0.22)',
+          float: '0 6px 14px rgba(27,42,44,0.08), 0 22px 48px -18px rgba(27,42,44,0.30)',
+        },
+      },
+    },
+  };
+</script>
+<style>
+  html, body { background: #F6F3EC; }
+  body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; color: #1B2A2C; }
+  .font-serif { font-feature-settings: 'ss01' 1; }
+  .tnum { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  [data-view] { display: none; }
+  [data-view].active { display: block; }
+  .subnav-btn[aria-current="true"] { color: #1E3A3F; border-color: #1E3A3F; }
+  .navbtn[aria-current="true"] { background: #1E3A3F; color: #F6F3EC; }
+  .fade-in { animation: fadeIn .35s ease both; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .agent-step { opacity: 0; transform: translateY(3px); transition: opacity .3s ease, transform .3s ease; }
+  .agent-step.show { opacity: 1; transform: translateY(0); }
+  .toast { transform: translateY(8px); opacity: 0; transition: transform .25s ease, opacity .25s ease; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  details > summary { list-style: none; cursor: pointer; }
+  details > summary::-webkit-details-marker { display: none; }
+  details[open] .chev { transform: rotate(90deg); }
+  .chev { transition: transform .2s ease; }
+  input[type="range"] { -webkit-appearance: none; height: 4px; border-radius: 999px; background: #E4DECF; }
+  input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 999px; background: #1E3A3F; border: 2px solid #F6F3EC; box-shadow: 0 0 0 1px #1E3A3F; cursor: pointer; margin-top: -6px; }
+  input[type="range"]::-moz-range-thumb { width: 16px; height: 16px; border-radius: 999px; background: #1E3A3F; border: 2px solid #F6F3EC; box-shadow: 0 0 0 1px #1E3A3F; cursor: pointer; }
+
+  /* focus states */
+  button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+    outline: 2px solid #1E3A3F; outline-offset: 2px; border-radius: 6px;
+  }
+  input[type="range"]:focus-visible { outline-offset: 6px; }
+
+  /* interactive micro-motion — transform/opacity only */
+  .navbtn, .subnav-btn, .chat-chip, .kpi-card, .export-btn, #reset-sliders, [data-goto] {
+    transition: background-color .18s ease, color .18s ease, border-color .18s ease, transform .15s ease, box-shadow .18s ease;
+  }
+  .navbtn:active, .chat-chip:active, .export-btn:active { transform: translateY(1px); }
+  .kpi-card:hover { transform: translateY(-2px); }
+  details > summary { transition: background-color .15s ease; }
+  details > summary:hover { background: rgba(27,42,44,0.03); }
+
+  /* map surfaces */
+  .map-frame { position: relative; }
+  .map-compass text { font-family: 'Inter', sans-serif; }
+</style>
+
+<body class="bg-paper text-ink antialiased">
+
+  <!-- Top bar -->
+  <header class="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b border-line">
+    <div class="max-w-[1400px] mx-auto px-6 lg:px-10 h-16 flex items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-md bg-accent flex items-center justify-center shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 5 5.2 5 9.2 5 14.6 12 22 12 22S19 14.6 19 9.2C19 5.2 16 2 12 2Z" stroke="#F6F3EC" stroke-width="1.6"/><circle cx="12" cy="9.2" r="2.4" stroke="#F6F3EC" stroke-width="1.6"/></svg>
+        </div>
+        <div class="leading-none">
+          <div class="font-serif text-[17px] tracking-tight">Planinzicht</div>
+          <div class="text-[11px] text-inkmuted -mt-0.5">Portaal voor gebiedsontwikkeling</div>
+        </div>
+      </div>
+
+      <nav class="hidden md:flex items-center gap-1" id="topnav">
+        <button class="navbtn px-3.5 py-2 rounded-md text-[13.5px] font-medium text-inkmuted hover:text-ink transition-colors" data-nav="dashboard">Dashboard</button>
+        <button class="navbtn px-3.5 py-2 rounded-md text-[13.5px] font-medium text-inkmuted hover:text-ink transition-colors" data-nav="acquisitie">Acquisitiekaart</button>
+        <button class="navbtn px-3.5 py-2 rounded-md text-[13.5px] font-medium text-inkmuted hover:text-ink transition-colors" data-nav="analyse">Kolenkade 14-22</button>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <span class="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-medium text-inkmuted border border-line rounded-full px-2.5 py-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-ochre"></span> Visiedemo
+        </span>
+        <div class="w-8 h-8 rounded-full bg-accent-50 border border-accent-100 flex items-center justify-center text-[12px] font-semibold text-accent-700">JV</div>
+      </div>
+    </div>
+
+    <!-- Sub nav (project context) -->
+    <div id="subnav" class="border-t border-line hidden">
+      <div class="max-w-[1400px] mx-auto px-6 lg:px-10 flex items-center gap-6 text-[13.5px] overflow-x-auto no-scrollbar">
+        <button class="subnav-btn py-3 border-b-2 border-transparent text-inkmuted hover:text-ink transition-colors whitespace-nowrap" data-subnav="analyse">Analyse</button>
+        <button class="subnav-btn py-3 border-b-2 border-transparent text-inkmuted hover:text-ink transition-colors whitespace-nowrap" data-subnav="chat">AI-Chat</button>
+        <button class="subnav-btn py-3 border-b-2 border-transparent text-inkmuted hover:text-ink transition-colors whitespace-nowrap" data-subnav="rapport">Rapport</button>
+        <button class="subnav-btn py-3 border-b-2 border-transparent text-inkmuted hover:text-ink transition-colors whitespace-nowrap" data-subnav="samenwerking">Samenwerking</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-[1400px] mx-auto px-6 lg:px-10 py-8">
+
+    <!-- ========================= DASHBOARD ========================= -->
+    <section data-view="dashboard" class="fade-in space-y-8">
+      <div class="flex items-end justify-between flex-wrap gap-4">
+        <div>
+          <h1 class="font-serif text-[28px] tracking-tight">Projectenpijplijn</h1>
+          <p class="text-inkmuted text-[14px] mt-1">Overzicht van lopende gebiedsontwikkelingen in uw portfolio.</p>
+        </div>
+      </div>
+
+      <div id="kpi-grid" class="grid grid-cols-2 lg:grid-cols-4 gap-4"></div>
+
+      <div class="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+        <div class="px-6 py-4 border-b border-line flex items-center justify-between">
+          <h2 class="font-serif text-[17px]">Actieve projecten</h2>
+          <span class="text-[12px] text-inkfaint">5 percelen</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-[13.5px]">
+            <thead>
+              <tr class="text-left text-inkfaint text-[11px] uppercase tracking-wide border-b border-line">
+                <th class="px-6 py-3 font-medium">Project</th>
+                <th class="px-6 py-3 font-medium">Plaats</th>
+                <th class="px-6 py-3 font-medium">Status</th>
+                <th class="px-6 py-3 font-medium text-right">Score</th>
+                <th class="px-6 py-3"></th>
+              </tr>
+            </thead>
+            <tbody id="dashboard-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+        <h2 class="font-serif text-[17px] mb-4">Signaleringen</h2>
+        <div id="signaleringen-list" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- ========================= ACQUISITIEKAART ========================= -->
+    <section data-view="acquisitie" class="fade-in space-y-6">
+      <div>
+        <h1 class="font-serif text-[28px] tracking-tight">Acquisitiekaart</h1>
+        <p class="text-inkmuted text-[14px] mt-1">Percelen in en rond Groningen, gerangschikt op haalbaarheidsscore.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6">
+        <div class="bg-surface border border-line rounded-xl shadow-card p-5">
+          <svg id="acquisitie-map" viewBox="0 0 560 420" class="w-full h-auto rounded-lg map-frame" style="background:#E7E2D2">
+            <defs>
+              <pattern id="mapGridA" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M20 0H0V20" fill="none" stroke="#DBD5BE" stroke-width="1"/>
+              </pattern>
+              <linearGradient id="canalGradA" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#2B4F55" stop-opacity="0.28"/>
+                <stop offset="1" stop-color="#2B4F55" stop-opacity="0.12"/>
+              </linearGradient>
+            </defs>
+            <rect x="0" y="0" width="560" height="420" fill="#E7E2D2"/>
+            <rect x="0" y="0" width="560" height="420" fill="url(#mapGridA)"/>
+            <!-- water: Diepenring-style canal arc -->
+            <path d="M-20 60 C 140 20, 150 140, 320 120 S 520 40, 600 90 L 600 118 C 520 70, 340 150, 320 148 S 150 168, -20 88 Z" fill="url(#canalGradA)"/>
+            <!-- roads -->
+            <g fill="#D8D2BC">
+              <rect x="0" y="150" width="560" height="26"/>
+              <rect x="180" y="0" width="24" height="420"/>
+              <rect x="360" y="0" width="18" height="420"/>
+              <rect x="0" y="290" width="560" height="20"/>
+            </g>
+            <rect x="0" y="161" width="560" height="1.5" fill="#C6BFA4" opacity="0.7"/>
+            <rect x="190.5" y="0" width="1.5" height="420" fill="#C6BFA4" opacity="0.7"/>
+            <!-- green space -->
+            <g fill="#B9C7AF" opacity="0.55">
+              <rect x="150" y="240" width="60" height="35" rx="3"/>
+              <rect x="330" y="250" width="70" height="24" rx="3"/>
+            </g>
+            <!-- city blocks -->
+            <g>
+              <rect x="40" y="40" width="90" height="60" rx="2" fill="#C9C3AC"/>
+              <rect x="230" y="30" width="70" height="90" rx="2" fill="#BFB89F"/>
+              <rect x="410" y="50" width="110" height="70" rx="2" fill="#CBC5AE"/>
+              <rect x="40" y="200" width="110" height="60" rx="2" fill="#C2BBA1"/>
+              <rect x="230" y="220" width="80" height="50" rx="2" fill="#CBC5AE"/>
+              <rect x="420" y="200" width="100" height="70" rx="2" fill="#BFB89F"/>
+              <rect x="60" y="330" width="120" height="60" rx="2" fill="#C9C3AC"/>
+              <rect x="250" y="340" width="90" height="50" rx="2" fill="#C2BBA1"/>
+              <rect x="420" y="330" width="100" height="60" rx="2" fill="#CBC5AE"/>
+            </g>
+            <!-- compass + scale -->
+            <g class="map-compass" transform="translate(28,388)" opacity="0.55">
+              <path d="M0 -16 L4 0 L0 16 L-4 0 Z" fill="#5C6B6C"/>
+              <text x="0" y="-20" text-anchor="middle" font-size="9" fill="#5C6B6C" font-weight="600">N</text>
+            </g>
+            <g class="map-compass" transform="translate(478,398)" opacity="0.55">
+              <line x1="0" y1="0" x2="60" y2="0" stroke="#5C6B6C" stroke-width="1.5"/>
+              <line x1="0" y1="-3" x2="0" y2="3" stroke="#5C6B6C" stroke-width="1.5"/>
+              <line x1="60" y1="-3" x2="60" y2="3" stroke="#5C6B6C" stroke-width="1.5"/>
+              <text x="30" y="-6" text-anchor="middle" font-size="9" fill="#5C6B6C">250 m</text>
+            </g>
+          </svg>
+          <div class="flex items-center gap-5 mt-4 text-[12px] text-inkmuted">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-sage"></span>Score ≥ 70</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-ochre"></span>Score 50–69</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-terracotta"></span>Score &lt; 50</span>
+          </div>
+        </div>
+
+        <div class="bg-surface border border-line rounded-xl shadow-card overflow-hidden">
+          <div class="px-5 py-4 border-b border-line">
+            <h2 class="font-serif text-[16px]">Percelen</h2>
+          </div>
+          <div id="acquisitie-list" class="divide-y divide-line"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= ANALYSE ========================= -->
+    <section data-view="analyse" class="fade-in space-y-8">
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <div class="text-[12px] text-inkfaint mb-1">Project</div>
+          <h1 class="font-serif text-[28px] tracking-tight">Kolenkade 14-22</h1>
+          <p class="text-inkmuted text-[14px] mt-1">9713 XX Groningen — binnenstedelijk transformatiegebied</p>
+        </div>
+        <div class="flex items-center gap-2 bg-accent-50 border border-accent-100 rounded-lg px-4 py-2.5">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="#1E3A3F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="#1E3A3F" stroke-width="1.6"/></svg>
+          <span class="text-[13px] text-accent-700 font-medium">Kavel 2.400 m² · voormalig bedrijventerrein</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6">
+        <!-- Bestemmingsblok -->
+        <div class="space-y-6">
+          <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+            <h2 class="font-serif text-[16px] mb-4">Bestemming op dit punt</h2>
+            <div id="bestemming-hoofdblok" class="mb-4"></div>
+            <div id="bestemming-grid" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
+          </div>
+
+          <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+            <h2 class="font-serif text-[16px] mb-1">Dubbelbestemmingen <span id="dubbelbestemmingen-count" class="text-inkfaint font-sans font-normal"></span></h2>
+            <div id="dubbelbestemmingen-list" class="mt-3 space-y-2"></div>
+          </div>
+
+          <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+            <div class="flex items-center justify-between mb-1">
+              <h2 class="font-serif text-[16px]">Geldende plannen</h2>
+              <span class="text-[12px] text-inkfaint">3 plannen</span>
+            </div>
+            <div id="plannen-list" class="mt-3 divide-y divide-line"></div>
+            <p class="text-[12px] text-inkfaint mt-3">De AI-chat gebruikt de volledige regels van de plannen gemarkeerd met "Beschikbaar in chat".</p>
+          </div>
+        </div>
+
+        <!-- Kaart -->
+        <div class="bg-surface border border-line rounded-xl shadow-card p-5 h-fit">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="font-serif text-[16px]">Locatie</h2>
+          </div>
+          <svg viewBox="0 0 400 300" class="w-full h-auto rounded-lg border border-line map-frame">
+            <defs>
+              <pattern id="mapGridL" width="18" height="18" patternUnits="userSpaceOnUse">
+                <path d="M18 0H0V18" fill="none" stroke="#CFC9AE" stroke-width="1"/>
+              </pattern>
+            </defs>
+            <rect width="400" height="300" fill="#DAD5C2"/>
+            <rect width="400" height="300" fill="url(#mapGridL)"/>
+            <rect x="0" y="230" width="400" height="30" fill="#C7C1A8"/>
+            <rect x="250" y="0" width="26" height="300" fill="#C7C1A8"/>
+            <rect x="0" y="244" width="400" height="1.2" fill="#B7AE8F" opacity="0.7"/>
+            <rect x="262" y="0" width="1.2" height="300" fill="#B7AE8F" opacity="0.7"/>
+            <g>
+              <rect x="20" y="20" width="70" height="50" rx="1.5" fill="#B7AF95"/>
+              <rect x="120" y="15" width="60" height="70" rx="1.5" fill="#AEA689"/>
+              <rect x="300" y="30" width="80" height="55" rx="1.5" fill="#BAB299"/>
+              <rect x="20" y="150" width="60" height="45" rx="1.5" fill="#B2AA8F"/>
+              <rect x="300" y="150" width="80" height="60" rx="1.5" fill="#B7AF95"/>
+              <rect x="20" y="200" width="200" height="18" rx="1.5" fill="#AEA689"/>
+            </g>
+            <g class="map-compass" transform="translate(24,272)" opacity="0.55">
+              <path d="M0 -11 L3 0 L0 11 L-3 0 Z" fill="#5C6B6C"/>
+              <text x="0" y="-14" text-anchor="middle" font-size="7.5" fill="#5C6B6C" font-weight="600">N</text>
+            </g>
+            <g class="map-compass" transform="translate(322,284)" opacity="0.55">
+              <line x1="0" y1="0" x2="46" y2="0" stroke="#5C6B6C" stroke-width="1.2"/>
+              <line x1="0" y1="-2.5" x2="0" y2="2.5" stroke="#5C6B6C" stroke-width="1.2"/>
+              <line x1="46" y1="-2.5" x2="46" y2="2.5" stroke="#5C6B6C" stroke-width="1.2"/>
+              <text x="23" y="-5" text-anchor="middle" font-size="7.5" fill="#5C6B6C">50 m</text>
+            </g>
+            <!-- kadastrale grens layer -->
+            <rect id="layer-kadaster" x="128" y="92" width="118" height="118" fill="none" stroke="#5C6B6C" stroke-width="1" stroke-dasharray="2 2"/>
+            <!-- geluid layer -->
+            <g id="layer-geluid">
+              <rect x="250" y="0" width="60" height="300" fill="url(#geluidGrad)" opacity="0.55"/>
+            </g>
+            <defs>
+              <linearGradient id="geluidGrad" x1="0" x2="1">
+                <stop offset="0" stop-color="#AA4A3A" stop-opacity="0.55"/>
+                <stop offset="1" stop-color="#AA4A3A" stop-opacity="0"/>
+              </linearGradient>
+              <pattern id="archHatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <rect width="6" height="6" fill="none"/>
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#A0722E" stroke-width="2"/>
+              </pattern>
+            </defs>
+            <!-- kavel + bouwvlak -->
+            <polygon points="130,95 245,95 245,208 130,208" fill="#1E3A3F" fill-opacity="0.12" stroke="#1E3A3F" stroke-width="1.6"/>
+            <!-- archeologie layer -->
+            <polygon id="layer-archeologie" points="130,95 245,95 245,208 130,208" fill="url(#archHatch)" opacity="0.6"/>
+            <!-- bouwvlak layer -->
+            <polygon id="layer-bouwvlak" points="148,113 227,113 227,190 148,190" fill="none" stroke="#1E3A3F" stroke-width="1.4" stroke-dasharray="4 3"/>
+            <g transform="translate(187,150)">
+              <path d="M0 -14C-6 -14 -10 -10 -10 -4 -10 3 0 14 0 14S10 3 10 -4C10 -10 6 -14 0 -14Z" fill="#1E3A3F"/>
+              <circle cx="0" cy="-4" r="3.4" fill="#F6F3EC"/>
+            </g>
+          </svg>
+          <p class="text-[11px] text-inkfaint mt-2 italic">Illustratieve kaartweergave — geen live luchtfoto-koppeling in deze demo.</p>
+
+          <div class="mt-4 space-y-2 border-t border-line pt-4">
+            <div class="text-[12px] font-medium text-inkmuted mb-1">Kaartlagen</div>
+            <label class="flex items-center gap-2 text-[13px] cursor-pointer">
+              <input type="checkbox" checked disabled class="accent-accent-600"/> Bouwvlak
+            </label>
+            <label class="flex items-center gap-2 text-[13px] cursor-pointer">
+              <input type="checkbox" data-layer="archeologie" checked class="accent-accent-600"/> Archeologie (Waarde – Archeologie 3)
+            </label>
+            <label class="flex items-center gap-2 text-[13px] cursor-pointer">
+              <input type="checkbox" data-layer="geluid" checked class="accent-accent-600"/> Geluid (spoorzone)
+            </label>
+            <label class="flex items-center gap-2 text-[13px] cursor-pointer">
+              <input type="checkbox" data-layer="kadaster" checked class="accent-accent-600"/> Kadastrale grens
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Haalbaarheidsscore -->
+      <div class="bg-surface border border-line rounded-xl shadow-card p-6 lg:p-8">
+        <div class="flex flex-col lg:flex-row gap-8">
+          <div class="flex items-center gap-6 lg:w-[300px] shrink-0 bg-paper border border-line rounded-xl p-5">
+            <svg width="112" height="112" viewBox="0 0 120 120" class="shrink-0">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#E4DECF" stroke-width="10"/>
+              <circle id="score-ring" cx="60" cy="60" r="52" fill="none" stroke="#1E3A3F" stroke-width="10" stroke-linecap="round" transform="rotate(-90 60 60)"/>
+              <text id="score-ring-text" x="60" y="66" text-anchor="middle" class="font-serif tnum" font-size="30" fill="#1B2A2C">68</text>
+            </svg>
+            <div>
+              <div class="text-[11px] text-inkfaint uppercase tracking-wide mb-1">Haalbaarheidsscore</div>
+              <div id="score-label" class="text-[15px] font-medium text-ochre leading-snug">Haalbaar, met aandachtspunten</div>
+              <div class="text-[12px] text-inkmuted mt-1.5">Gewogen optelling van vijf deelscores</div>
+            </div>
+          </div>
+          <div id="subscores" class="flex-1 space-y-1"></div>
+        </div>
+      </div>
+
+      <!-- Financiële onderbouwing -->
+      <div class="bg-surface border border-line rounded-xl shadow-card p-6 lg:p-8">
+        <div class="flex items-center justify-between mb-1 flex-wrap gap-2">
+          <h2 class="font-serif text-[18px]">Financiële onderbouwing — residuele grondwaarde</h2>
+          <button id="reset-sliders" class="text-[12px] text-inkmuted hover:text-accent-700 border border-line rounded-md px-3 py-1.5 transition-colors">Terug naar basisaannames</button>
+        </div>
+        <p class="text-[13px] text-inkmuted mb-6">Opbrengst min bouwkosten, bijkomende kosten en winst-en-risico-opslag. Pas de aannames aan om de gevoeligheid te zien.</p>
+
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-8">
+          <div class="space-y-6">
+            <div>
+              <div class="flex items-center justify-between text-[13px] mb-1.5">
+                <span class="text-inkmuted">Verkoopprijs <span class="text-inkfaint">(aanname)</span></span>
+                <span id="verkoopprijs-value" class="tnum font-medium">€ 4.150 /m² GBO</span>
+              </div>
+              <input type="range" id="verkoopprijs-slider" min="3800" max="4600" step="25" value="4150" class="w-full"/>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-[13px] mb-1.5">
+                <span class="text-inkmuted">Bouwkosten <span class="text-inkfaint">(aanname)</span></span>
+                <span id="bouwkosten-value" class="tnum font-medium">€ 1.950 /m² BVO</span>
+              </div>
+              <input type="range" id="bouwkosten-slider" min="1700" max="2300" step="25" value="1950" class="w-full"/>
+            </div>
+            <div class="text-[12px] text-inkfaint bg-paper rounded-lg p-3 leading-relaxed">
+              Programma: 42 appartementen · gemiddeld 78 m² GBO · 3.850 m² BVO (aanname, o.b.v. bouwvlak en 4 bouwlagen)
+            </div>
+          </div>
+
+          <div class="border-t lg:border-t-0 lg:border-l border-line pt-6 lg:pt-0 lg:pl-8">
+            <div class="space-y-2.5 text-[14px]" id="calc-lines"></div>
+            <div class="mt-5 bg-accent-50 border border-accent-100 rounded-xl px-5 py-4">
+              <div class="flex items-center justify-between">
+                <span class="font-serif text-[16px] text-accent-700">Residuele grondwaarde</span>
+                <span id="residueel-total" class="font-serif text-[24px] tnum text-accent-700">€ 2.672.465</span>
+              </div>
+              <div class="text-[12px] text-inkmuted text-right tnum mt-0.5" id="residueel-per-m2">≈ € 1.114 /m² kavel</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= AI-CHAT ========================= -->
+    <section data-view="chat" class="fade-in space-y-6">
+      <div>
+        <div class="text-[12px] text-inkfaint mb-1">Kolenkade 14-22</div>
+        <h1 class="font-serif text-[28px] tracking-tight">AI-Chat</h1>
+        <p class="text-inkmuted text-[14px] mt-1">Twee gespecialiseerde agents werken samen aan één onderbouwd antwoord.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="bg-surface border border-line rounded-xl shadow-card p-5">
+          <div class="flex items-center gap-2.5 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-accent-50 border border-accent-100 flex items-center justify-center">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 3v18M5 8l7-5 7 5M5 8v9a2 2 0 002 2h10a2 2 0 002-2V8" stroke="#1E3A3F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div class="text-[13.5px] font-medium">Juridische agent</div>
+              <div class="text-[11px] text-inkfaint">Toetst planregels &amp; bestemmingsplan</div>
+            </div>
+            <div id="agent-legal-status" class="ml-auto text-[11px] text-inkfaint">wacht</div>
+          </div>
+          <div id="agent-legal-steps" class="space-y-2 min-h-[88px]"></div>
+        </div>
+
+        <div class="bg-surface border border-line rounded-xl shadow-card p-5">
+          <div class="flex items-center gap-2.5 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-accent-50 border border-accent-100 flex items-center justify-center">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M4 19h16M7 15l3-4 3 3 5-7" stroke="#1E3A3F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <div class="text-[13.5px] font-medium">Financiële agent</div>
+              <div class="text-[11px] text-inkfaint">Rekent residuele grondwaarde door</div>
+            </div>
+            <div id="agent-finance-status" class="ml-auto text-[11px] text-inkfaint">wacht</div>
+          </div>
+          <div id="agent-finance-steps" class="space-y-2 min-h-[88px]"></div>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+        <div id="chat-answer-wrap" class="hidden">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 5 5.2 5 9.2 5 14.6 12 22 12 22S19 14.6 19 9.2C19 5.2 16 2 12 2Z" stroke="#F6F3EC" stroke-width="2"/></svg>
+            </div>
+            <span class="text-[12px] font-medium text-inkmuted">Samengevoegd antwoord</span>
+          </div>
+          <p id="chat-answer-text" class="text-[14.5px] leading-relaxed"></p>
+          <div id="chat-answer-sources" class="mt-3 flex flex-wrap gap-2"></div>
+        </div>
+        <div id="chat-answer-empty" class="text-[13.5px] text-inkfaint text-center py-6">Kies hieronder een voorbeeldvraag om de agents aan het werk te zien.</div>
+      </div>
+
+      <div class="bg-surface border border-line rounded-xl shadow-card p-5">
+        <div id="chat-chips" class="flex flex-wrap gap-2 mb-3"></div>
+        <form id="chat-form" class="flex items-center gap-2">
+          <input id="chat-input" type="text" placeholder="Stel een vraag over dit project…" class="flex-1 border border-line rounded-lg px-4 py-2.5 text-[13.5px] outline-none focus:border-accent-600 transition-colors" />
+          <button type="submit" class="w-10 h-10 rounded-lg bg-accent text-paper flex items-center justify-center shrink-0 hover:bg-accent-700 transition-colors">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ========================= RAPPORT ========================= -->
+    <section data-view="rapport" class="fade-in space-y-6">
+      <div class="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <div class="text-[12px] text-inkfaint mb-1">Kolenkade 14-22</div>
+          <h1 class="font-serif text-[28px] tracking-tight">Rapport</h1>
+          <p class="text-inkmuted text-[14px] mt-1">Exportvoorbeeld van de adresanalyse.</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="export-btn text-[13px] font-medium border border-line rounded-lg px-4 py-2.5 hover:bg-paper transition-colors">Exporteer als PDF</button>
+          <button class="export-btn text-[13px] font-medium bg-accent text-paper rounded-lg px-4 py-2.5 hover:bg-accent-700 transition-colors">Delen met gemeente</button>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-line rounded-xl shadow-float mx-auto max-w-[820px] p-10 lg:p-14" id="rapport-doc">
+        <!-- filled by JS -->
+      </div>
+    </section>
+
+    <!-- ========================= SAMENWERKING ========================= -->
+    <section data-view="samenwerking" class="fade-in space-y-6">
+      <div>
+        <div class="text-[12px] text-inkfaint mb-1">Kolenkade 14-22</div>
+        <h1 class="font-serif text-[28px] tracking-tight">Samenwerking</h1>
+        <p class="text-inkmuted text-[14px] mt-1">Team-activiteit, taken en signaleringen voor dit project.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_1fr] gap-6">
+        <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+          <h2 class="font-serif text-[16px] mb-4">Activiteit</h2>
+          <div id="activiteit-list" class="space-y-4 mb-5"></div>
+          <form id="note-form" class="flex items-center gap-2 border-t border-line pt-4">
+            <input id="note-input" type="text" placeholder="Notitie toevoegen…" class="flex-1 border border-line rounded-lg px-3.5 py-2 text-[13px] outline-none focus:border-accent-600 transition-colors" />
+            <button type="submit" class="text-[12.5px] font-medium bg-accent text-paper rounded-lg px-3.5 py-2 hover:bg-accent-700 transition-colors">Plaatsen</button>
+          </form>
+        </div>
+
+        <div class="bg-surface border border-line rounded-xl shadow-card p-6">
+          <h2 class="font-serif text-[16px] mb-4">Taken</h2>
+          <div id="taken-list" class="space-y-3"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <div id="toast" class="toast fixed bottom-6 left-1/2 -translate-x-1/2 bg-ink text-paper text-[13px] px-4 py-2.5 rounded-lg shadow-float z-50"></div>
+
+  <script>
+  /* ============================================================
+     SINGLE SOURCE OF TRUTH — every screen renders from this object
+     ============================================================ */
+  const DATA = {
+    project: { address: 'Kolenkade 14-22', postcode: '9713 XX', city: 'Groningen', area: 'Binnenstedelijk transformatiegebied', kavelM2: 2400 },
+    bestemming: {
+      hoofdbestemming: 'Bedrijventerrein',
+      wijziging: 'Wijzigingsbevoegdheid naar Wonen (art. 4.6), mits geluid en parkeren zijn aangetoond — geen rechtstreeks bouwrecht.',
+      functieaanduiding: '—',
+      maxBouwhoogte: '16 m',
+      maxGoothoogte: 'Niet vastgelegd',
+      bebouwingspercentage: '45%',
+      maxBouwlagen: '4',
+      bouwvlakM2: '1.450 m²',
+      maxBebouwbaarM2: '1.080 m² (indicatief)',
+    },
+    dubbelbestemmingen: [
+      { naam: 'Waarde – Archeologie 3', toelichting: 'Bij bodemingrepen groter dan 500 m² en dieper dan 40 cm is archeologisch vooronderzoek verplicht.' },
+    ],
+    plannen: [
+      { naam: 'Kranenburg-Kolenkade', type: 'Hoofdplan', status: 'vastgesteld', inChat: true },
+      { naam: 'Herziening Parkeren 2021', type: 'Paraplu', status: 'vastgesteld', inChat: true },
+      { naam: 'Herziening Bestemmingsregels Wonen 2A', type: 'Paraplu', status: 'vastgesteld', inChat: true },
+    ],
+    programma: { woningen: 42, gboM2: 78, bvoM2: 3850 },
+    financieel: {
+      verkoopprijsBase: 4150, bouwkostenBase: 1950,
+      sloopkosten: 250000, bijkomendPct: 0.15, winstRisicoPct: 0.15,
+      grondwaardeNorm: 1600,
+    },
+    score: {
+      weights: { planologisch: 0.25, financieel: 0.25, fysiek: 0.20, risico: 0.15, markt: 0.15 },
+      base: { planologisch: 60, fysiek: 75, risico: 55, markt: 80 },
+      meta: {
+        financieel: { label: 'Financieel', bron: 'Eigen rekenmodel o.b.v. ingevoerde aannames — richtwaarde € 1.600/m² is een aanname, geen getoetste norm', aanname: true,
+          tekst: '' },
+        planologisch: { label: 'Planologisch', bron: 'Bestemmingsplan Kranenburg-Kolenkade, art. 4.6', aanname: false,
+          tekst: 'Woonfunctie is niet direct toegestaan. Realisatie kan via de wijzigingsbevoegdheid in art. 4.6, maar dit is geen bouwrecht — het vraagt een separate procedure met instemming van burgemeester en wethouders.' },
+        fysiek: { label: 'Fysiek', bron: 'Bodemonderzoek 2019 — sloopraming: interne inschatting, geen offerte', aanname: true,
+          tekst: 'De bodem is in 2019 gesaneerd tot het niveau "Wonen met tuin". De locatie heeft goede auto- en fietsontsluiting. Aandachtspunt: de fundering van de bestaande loods moet bij sloop nader worden onderzocht.' },
+        risico: { label: 'Risico', bron: 'Dubbelbestemming uit bestemmingsplan; geluidszone-inschatting is een aanname, geen akoestisch onderzoek', aanname: true,
+          tekst: 'De dubbelbestemming Waarde – Archeologie 3 vereist vooronderzoek bij bodemingrepen. Het perceel ligt daarnaast binnen de geluidszone van de nabijgelegen spoorlijn, wat een hogere-waardenprocedure kan vergen. Beide onderzoeken lopen nog.' },
+        markt: { label: 'Markt', bron: 'Interne inschatting o.b.v. vergelijkbare transformatieprojecten — aanname, geen extern marktonderzoek', aanname: true,
+          tekst: 'Groningen kent een aanhoudend woningtekort in het middensegment. Vergelijkbare nieuwbouwappartementen in de binnenstad worden doorgaans binnen enkele maanden verkocht.' },
+      },
+    },
+    portfolio: [
+      { adres: 'Kolenkade 14-22', plaats: 'Groningen', score: 68, status: 'In analyse', clickable: true, pin: { x: 187, y: 152 } },
+      { adres: 'Damsterdiep 88', plaats: 'Groningen', score: 82, status: 'Haalbaarheid bevestigd', pin: { x: 440, y: 90 } },
+      { adres: 'Peizerweg 210', plaats: 'Groningen', score: 41, status: 'On hold — planologisch knelpunt', pin: { x: 90, y: 230 } },
+      { adres: 'Hereweg 310', plaats: 'Groningen', score: 74, status: 'Wachten op gemeente', pin: { x: 300, y: 250 } },
+      { adres: 'Sontweg 5', plaats: 'Groningen', score: 55, status: 'In analyse', pin: { x: 470, y: 360 } },
+    ],
+  };
+
+  /* ---------- formatting helpers ---------- */
+  const euro = (n) => '€ ' + Math.round(n).toLocaleString('nl-NL');
+  const clamp = (min, max, v) => Math.max(min, Math.min(max, v));
+  function bandColor(score) {
+    if (score >= 70) return { text: 'text-sage', bg: 'bg-sage', bg50: 'bg-sage-50', label: 'Gunstig' };
+    if (score >= 50) return { text: 'text-ochre', bg: 'bg-ochre', bg50: 'bg-ochre-50', label: 'Aandacht' };
+    return { text: 'text-terracotta', bg: 'bg-terracotta', bg50: 'bg-terracotta-50', label: 'Risico' };
+  }
+
+  /* ---------- financial model (shared by Analyse + Chat + Rapport) ---------- */
+  function calcFinancieel(bouwkosten, verkoopprijs) {
+    const p = DATA.programma, f = DATA.financieel;
+    const opbrengst = p.woningen * p.gboM2 * verkoopprijs;
+    const bouwkostenTotaal = p.bvoM2 * bouwkosten;
+    const bijkomend = f.sloopkosten + f.bijkomendPct * bouwkostenTotaal;
+    const winstRisico = f.winstRisicoPct * opbrengst;
+    const residueel = opbrengst - bouwkostenTotaal - bijkomend - winstRisico;
+    const residueelPerM2 = residueel / DATA.project.kavelM2;
+    const financieelScore = clamp(0, 100, 100 * (residueelPerM2 / f.grondwaardeNorm));
+    return { opbrengst, bouwkostenTotaal, bijkomend, winstRisico, residueel, residueelPerM2, financieelScore };
+  }
+  function calcTotaal(financieelScore) {
+    const w = DATA.score.weights, b = DATA.score.base;
+    return w.planologisch * b.planologisch + w.financieel * financieelScore + w.fysiek * b.fysiek + w.risico * b.risico + w.markt * b.markt;
+  }
+  const BASE_CALC = calcFinancieel(DATA.financieel.bouwkostenBase, DATA.financieel.verkoopprijsBase);
+  const BASE_TOTAAL = calcTotaal(BASE_CALC.financieelScore);
+
+  /* ============================================================
+     NAVIGATION
+     ============================================================ */
+  const views = ['dashboard', 'acquisitie', 'analyse', 'chat', 'rapport', 'samenwerking'];
+  const projectViews = ['analyse', 'chat', 'rapport', 'samenwerking'];
+  let currentView = null;
+
+  function showView(view) {
+    if (view === currentView) return;
+    if (currentView === 'analyse' && view !== 'analyse') resetSliders(true);
+    currentView = view;
+    document.querySelectorAll('[data-view]').forEach((el) => el.classList.toggle('active', el.dataset.view === view));
+
+    const inProject = projectViews.includes(view);
+    document.getElementById('subnav').classList.toggle('hidden', !inProject);
+    document.querySelectorAll('.subnav-btn').forEach((b) => b.setAttribute('aria-current', String(b.dataset.subnav === view)));
+
+    document.querySelectorAll('.navbtn').forEach((b) => {
+      const active = (b.dataset.nav === 'analyse' && inProject) || b.dataset.nav === view;
+      b.setAttribute('aria-current', String(active));
+    });
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }
+  document.querySelectorAll('[data-nav]').forEach((b) => b.addEventListener('click', () => showView(b.dataset.nav === 'analyse' ? 'analyse' : b.dataset.nav)));
+  document.querySelectorAll('[data-subnav]').forEach((b) => b.addEventListener('click', () => showView(b.dataset.subnav)));
+
+  /* ============================================================
+     RENDER: DASHBOARD
+     ============================================================ */
+  function renderDashboard() {
+    const p = DATA.portfolio;
+    const avg = Math.round(p.reduce((s, x) => s + x.score, 0) / p.length);
+    const above70 = p.filter((x) => x.score >= 70);
+    const KPI_ICONS = {
+      layers: '<path d="M12 3l8 4.5-8 4.5-8-4.5L12 3Z" stroke="#1E3A3F" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 12l8 4.5 8-4.5" stroke="#1E3A3F" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 16.5L12 21l8-4.5" stroke="#1E3A3F" stroke-width="1.6" stroke-linejoin="round"/>',
+      target: '<circle cx="12" cy="12" r="8.5" stroke="#1E3A3F" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" stroke="#1E3A3F" stroke-width="1.6"/><circle cx="12" cy="12" r="1" fill="#1E3A3F"/>',
+      bell: '<path d="M6 17h12l-1.6-2.4a3 3 0 01-.5-1.66V10a4.9 4.9 0 00-9.8 0v2.94a3 3 0 01-.5 1.66L6 17Z" stroke="#1E3A3F" stroke-width="1.6" stroke-linejoin="round"/><path d="M10 20a2 2 0 004 0" stroke="#1E3A3F" stroke-width="1.6" stroke-linecap="round"/>',
+      trend: '<path d="M4 16l5.5-6 4 4L20 6" stroke="#1E3A3F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.5 6H20v5.5" stroke="#1E3A3F" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+    };
+    const kpis = [
+      { label: 'Projecten in portfolio', value: p.length, icon: 'layers' },
+      { label: 'Gemiddelde haalbaarheidsscore', value: avg, icon: 'target' },
+      { label: 'Signaleringen deze week', value: 2, icon: 'bell' },
+      { label: 'Percelen boven score 70', value: above70.length, icon: 'trend' },
+    ];
+    document.getElementById('kpi-grid').innerHTML = kpis.map((k) => `
+      <div class="kpi-card bg-surface border border-line rounded-xl shadow-card p-5">
+        <div class="w-8 h-8 rounded-lg bg-accent-50 border border-accent-100 flex items-center justify-center mb-3">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none">${KPI_ICONS[k.icon]}</svg>
+        </div>
+        <div class="text-[11px] text-inkfaint uppercase tracking-wide mb-1.5">${k.label}</div>
+        <div class="font-serif text-[27px] tnum leading-none">${k.value}</div>
+      </div>`).join('');
+
+    document.getElementById('dashboard-rows').innerHTML = p.map((row) => {
+      const band = bandColor(row.score);
+      const clickable = row.clickable;
+      return `
+      <tr class="border-b border-line last:border-b-0 ${clickable ? 'cursor-pointer hover:bg-paper' : ''} transition-colors" ${clickable ? 'data-goto="analyse"' : ''}>
+        <td class="px-6 py-3.5 font-medium">${row.adres}</td>
+        <td class="px-6 py-3.5 text-inkmuted">${row.plaats}</td>
+        <td class="px-6 py-3.5 text-inkmuted">${row.status}</td>
+        <td class="px-6 py-3.5 text-right tnum font-medium ${band.text}">${row.score}</td>
+        <td class="px-6 py-3.5 text-right">${clickable ? '<span class="text-inkfaint">→</span>' : ''}</td>
+      </tr>`;
+    }).join('');
+    document.querySelectorAll('[data-goto]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.goto)));
+
+    const signaleringen = [
+      { title: 'Nieuw voorontwerp parapluplan "Parkeernormen 2026" gepubliceerd', body: 'Raakt 2 projecten in uw portfolio, waaronder Kolenkade 14-22.' },
+      { title: 'Sontweg 5 toegevoegd aan de projectenpijplijn', body: 'Automatische signalering — score 55, binnen uw zoekprofiel.' },
+    ];
+    document.getElementById('signaleringen-list').innerHTML = signaleringen.map((s) => `
+      <div class="flex gap-3 text-[13.5px]">
+        <div class="w-1.5 h-1.5 rounded-full bg-ochre mt-2 shrink-0"></div>
+        <div><div class="font-medium">${s.title}</div><div class="text-inkmuted">${s.body}</div></div>
+      </div>`).join('');
+  }
+
+  /* ============================================================
+     RENDER: ACQUISITIEKAART
+     ============================================================ */
+  function renderAcquisitie() {
+    const svg = document.getElementById('acquisitie-map');
+    DATA.portfolio.forEach((row) => {
+      const band = bandColor(row.score);
+      const color = band.text.includes('sage') ? '#3F6B4F' : band.text.includes('ochre') ? '#A0722E' : '#AA4A3A';
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('transform', `translate(${row.pin.x},${row.pin.y})`);
+      g.setAttribute('class', row.clickable ? 'cursor-pointer' : '');
+      g.innerHTML = `
+        <circle r="16" fill="${color}" opacity="0.15"/>
+        <circle r="7" fill="${color}" stroke="#FFFFFF" stroke-width="2"/>
+        <text y="-14" text-anchor="middle" font-size="11" font-family="Inter" fill="#1B2A2C" font-weight="600">${row.score}</text>`;
+      if (row.clickable) g.addEventListener('click', () => showView('analyse'));
+      svg.appendChild(g);
+    });
+
+    document.getElementById('acquisitie-list').innerHTML = DATA.portfolio
+      .slice()
+      .sort((a, b) => b.score - a.score)
+      .map((row) => {
+        const band = bandColor(row.score);
+        return `
+        <div class="px-5 py-3.5 flex items-center justify-between ${row.clickable ? 'cursor-pointer hover:bg-paper' : ''} transition-colors" ${row.clickable ? 'data-goto="analyse"' : ''}>
+          <div>
+            <div class="text-[13.5px] font-medium">${row.adres}</div>
+            <div class="text-[12px] text-inkmuted">${row.plaats} · ${row.status}</div>
+          </div>
+          <div class="w-9 h-9 rounded-full ${band.bg50} flex items-center justify-center text-[12.5px] font-semibold tnum ${band.text}">${row.score}</div>
+        </div>`;
+      }).join('');
+    document.querySelectorAll('[data-goto]').forEach((el) => el.addEventListener('click', () => showView(el.dataset.goto)));
+  }
+
+  /* ============================================================
+     RENDER: ANALYSE
+     ============================================================ */
+  function renderBestemmingStatic() {
+    const b = DATA.bestemming;
+    document.getElementById('bestemming-hoofdblok').innerHTML = `
+      <div class="border border-line rounded-lg p-4">
+        <div class="text-[11px] text-inkfaint mb-1">Hoofdbestemming</div>
+        <div class="text-[16px] font-medium mb-1.5">${b.hoofdbestemming}</div>
+        <div class="text-[12.5px] text-inkmuted leading-relaxed">${b.wijziging}</div>
+      </div>`;
+    const cells = [
+      ['Functieaanduiding', b.functieaanduiding],
+      ['Max. bouwhoogte', b.maxBouwhoogte],
+      ['Max. goothoogte', b.maxGoothoogte],
+      ['Bebouwingspercentage', b.bebouwingspercentage],
+      ['Max. bouwlagen', b.maxBouwlagen],
+      ['Bouwvlak op dit punt', b.bouwvlakM2],
+      ['Max. bebouwbare opp.', b.maxBebouwbaarM2],
+    ];
+    document.getElementById('bestemming-grid').innerHTML = cells.map(([k, v]) => `
+      <div class="border border-line rounded-lg p-3">
+        <div class="text-[10.5px] text-inkfaint mb-1 leading-tight">${k}</div>
+        <div class="text-[13.5px] font-medium">${v}</div>
+      </div>`).join('');
+
+    document.getElementById('dubbelbestemmingen-count').textContent = `(${DATA.dubbelbestemmingen.length})`;
+    document.getElementById('dubbelbestemmingen-list').innerHTML = DATA.dubbelbestemmingen.map((d) => `
+      <div class="border border-line rounded-lg p-3">
+        <div class="text-[13.5px] font-medium mb-0.5">${d.naam}</div>
+        <div class="text-[12.5px] text-inkmuted leading-relaxed">${d.toelichting}</div>
+      </div>`).join('');
+
+    document.getElementById('plannen-list').innerHTML = DATA.plannen.map((p) => `
+      <div class="py-3 flex items-center justify-between gap-3">
+        <div>
+          <span class="text-[13.5px] font-medium">${p.naam}</span>
+          <span class="text-[12px] text-inkfaint"> — ${p.type} · ${p.status}</span>
+        </div>
+        ${p.inChat ? '<span class="shrink-0 text-[11px] font-medium text-accent-700 bg-accent-50 border border-accent-100 rounded-full px-2.5 py-1">Beschikbaar in chat</span>' : ''}
+      </div>`).join('');
+
+    document.querySelectorAll('[data-layer]').forEach((cb) => {
+      cb.addEventListener('change', () => {
+        document.getElementById('layer-' + cb.dataset.layer).style.display = cb.checked ? '' : 'none';
+      });
+    });
+  }
+
+  function renderScore(financieelScore, totaal) {
+    const b = DATA.score.base;
+    const subs = {
+      planologisch: b.planologisch,
+      financieel: financieelScore,
+      fysiek: b.fysiek,
+      risico: b.risico,
+      markt: b.markt,
+    };
+
+    const r = 52, c = 2 * Math.PI * r;
+    const ring = document.getElementById('score-ring');
+    ring.setAttribute('stroke-dasharray', String(c));
+    ring.setAttribute('stroke-dashoffset', String(c * (1 - totaal / 100)));
+    ring.setAttribute('stroke', totaal >= 70 ? '#3F6B4F' : totaal >= 50 ? '#A0722E' : '#AA4A3A');
+    document.getElementById('score-ring-text').textContent = Math.round(totaal);
+    const band = bandColor(totaal);
+    const labelEl = document.getElementById('score-label');
+    labelEl.textContent = totaal >= 70 ? 'Kansrijk' : totaal >= 50 ? 'Haalbaar, met aandachtspunten' : 'Beperkt haalbaar';
+    labelEl.className = 'text-[15px] font-medium ' + band.text;
+
+    const weightLabel = { planologisch: '25%', financieel: '25%', fysiek: '20%', risico: '15%', markt: '15%' };
+    document.getElementById('subscores').innerHTML = Object.entries(subs).map(([key, val]) => {
+      const meta = DATA.score.meta[key];
+      const bnd = bandColor(val);
+      const financieelNote = key === 'financieel'
+        ? `<p class="text-[13px] text-inkmuted leading-relaxed mt-2">De residuele grondwaarde van <strong class="tnum">${euro(BASE_CALC.residueel)}</strong> (≈ <strong class="tnum">${euro(BASE_CALC.residueelPerM2)}</strong>/m² kavel bij de huidige aannames) wordt getoetst aan een richtwaarde van <strong>€ 1.600/m²</strong> voor rendabele transformatie in dit gebied. Score = 100 × (grondwaarde per m² / richtwaarde).</p>`
+        : `<p class="text-[13px] text-inkmuted leading-relaxed mt-2">${meta.tekst}</p>`;
+      return `
+      <details class="group border-b border-line last:border-b-0 py-1">
+        <summary class="flex items-center gap-3 rounded-lg px-2 -mx-2 py-2.5">
+          <svg class="chev shrink-0" width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#8A9695" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="text-[13.5px] font-medium w-28 shrink-0">${meta.label}</span>
+          <span class="text-[11px] text-inkfaint w-10 shrink-0">${weightLabel[key]}</span>
+          <div class="flex-1 h-2 rounded-full bg-line overflow-hidden">
+            <div class="h-full ${bnd.bg} rounded-full" style="width:${val}%"></div>
+          </div>
+          <span class="text-[13.5px] font-medium tnum w-8 text-right shrink-0">${Math.round(val)}</span>
+        </summary>
+        <div class="pl-[6.75rem] pr-2 pt-1 pb-1">
+          ${financieelNote}
+          <div class="text-[11px] text-inkfaint mt-2 flex items-center gap-1.5">
+            ${meta.aanname || key === 'financieel' ? '<span class="text-ochre font-medium">Aanname —</span>' : '<span class="text-sage font-medium">Bron —</span>'} ${meta.bron}
+          </div>
+        </div>
+      </details>`;
+    }).join('');
+  }
+
+  function renderCalc(bouwkosten, verkoopprijs) {
+    const r = calcFinancieel(bouwkosten, verkoopprijs);
+    const totaal = calcTotaal(r.financieelScore);
+
+    document.getElementById('verkoopprijs-value').textContent = euro(verkoopprijs) + ' /m² GBO';
+    document.getElementById('bouwkosten-value').textContent = euro(bouwkosten) + ' /m² BVO';
+
+    document.getElementById('calc-lines').innerHTML = `
+      <div class="flex items-center justify-between"><span class="text-inkmuted">Opbrengst (v.o.n.)</span><span class="tnum">${euro(r.opbrengst)}</span></div>
+      <div class="flex items-center justify-between"><span class="text-inkmuted">− Bouwkosten</span><span class="tnum">${euro(r.bouwkostenTotaal)}</span></div>
+      <div class="flex items-center justify-between"><span class="text-inkmuted">− Bijkomende kosten</span><span class="tnum">${euro(r.bijkomend)}</span></div>
+      <div class="flex items-center justify-between"><span class="text-inkmuted">− Winst en risico (15%)</span><span class="tnum">${euro(r.winstRisico)}</span></div>`;
+    document.getElementById('residueel-total').textContent = euro(r.residueel);
+    document.getElementById('residueel-per-m2').textContent = '≈ ' + euro(r.residueelPerM2) + ' /m² kavel';
+
+    renderScore(r.financieelScore, totaal);
+    return r;
+  }
+
+  function resetSliders(rerender = true) {
+    document.getElementById('verkoopprijs-slider').value = DATA.financieel.verkoopprijsBase;
+    document.getElementById('bouwkosten-slider').value = DATA.financieel.bouwkostenBase;
+    if (rerender) renderCalc(DATA.financieel.bouwkostenBase, DATA.financieel.verkoopprijsBase);
+  }
+
+  function wireSliders() {
+    const vSlider = document.getElementById('verkoopprijs-slider');
+    const bSlider = document.getElementById('bouwkosten-slider');
+    const update = () => renderCalc(Number(bSlider.value), Number(vSlider.value));
+    vSlider.addEventListener('input', update);
+    bSlider.addEventListener('input', update);
+    document.getElementById('reset-sliders').addEventListener('click', () => resetSliders(true));
+  }
+
+  /* ============================================================
+     RENDER: AI-CHAT
+     ============================================================ */
+  const CHAT_FLOWS = {
+    bouwen: {
+      trigger: ['bouwen', 'woningen', 'mag ik'],
+      chip: 'Mag ik hier woningen bouwen?',
+      legal: [
+        'Bestemmingsplan Kranenburg-Kolenkade doorzoeken…',
+        'Hoofdbestemming: Bedrijventerrein — geen rechtstreekse woonfunctie',
+        'Wijzigingsbevoegdheid art. 4.6 gevonden: wonen mogelijk mits geluid en parkeren zijn aangetoond',
+      ],
+      finance: [
+        'Programma doorrekenen: 42 appartementen, gemiddeld 78 m² GBO…',
+        'Residuele grondwaarde berekenen o.b.v. huidige aannames',
+        `Resultaat: ${euro(BASE_CALC.residueel)} (≈ ${euro(BASE_CALC.residueelPerM2)}/m² kavel)`,
+      ],
+      answer: `Ja, in principe wel — maar niet automatisch. De hoofdbestemming is Bedrijventerrein; woningbouw is mogelijk via de wijzigingsbevoegdheid in art. 4.6, mits u geluid en parkeren aantoont. Financieel is dit programma haalbaar: bij de huidige aannames bedraagt de residuele grondwaarde ${euro(BASE_CALC.residueel)} (≈ ${euro(BASE_CALC.residueelPerM2)}/m² kavel). Gecombineerd komt dit uit op een haalbaarheidsscore van ${Math.round(BASE_TOTAAL)}/100 — haalbaar, met een aantal punten die nader onderzoek vragen.`,
+      sources: ['Bestemmingsplan Kranenburg-Kolenkade, art. 4.6', 'Rekenmodel Planinzicht (aannames)'],
+    },
+    rendement: {
+      trigger: ['rendement', '15%', 'financieel haalbaar'],
+      chip: 'Is dit financieel haalbaar boven 15% rendement?',
+      finance: [
+        'Winst- en risico-opslag van 15% (ontwikkelaarsmarge) staat al in het rekenmodel…',
+        `Na deze marge resteert een residuele grondwaarde van ${euro(BASE_CALC.residueel)}`,
+        'De 15%-eis is dus al verwerkt vóór de grondwaarde wordt bepaald',
+      ],
+      legal: [
+        'Planologisch risico meewegen…',
+        'Wijzigingsbevoegdheid is geen bouwrecht — extra doorlooptijd telt mee in de risico-inschatting',
+      ],
+      answer: `Bij de gehanteerde aannames (verkoopprijs € 4.150/m² v.o.n., bouwkosten € 1.950/m² BVO) is een ontwikkelaarsmarge van 15% al verwerkt in de berekening; wat resteert is een residuele grondwaarde van ${euro(BASE_CALC.residueel)}. Of dit "15% rendement" oplevert hangt dus af van de grondprijs waartegen u het perceel verwerft — hoe lager die prijs ten opzichte van dit bedrag, hoe groter de marge daarboven. Let op: dit is een inschatting op basis van aannames, geen getoetste taxatie.`,
+      sources: ['Rekenmodel Planinzicht (aannames)', 'Bestemmingsplan Kranenburg-Kolenkade, art. 4.6'],
+    },
+    risico: {
+      trigger: ['risico', 'risico\'s', 'belangrijkste'],
+      chip: 'Wat zijn de belangrijkste risico\'s?',
+      legal: [
+        'Dubbelbestemmingen doorzoeken…',
+        'Waarde – Archeologie 3 gevonden → vooronderzoek verplicht bij bodemingreep',
+        'Geluidszone nabijgelegen spoor → mogelijk hogere-waardenprocedure nodig',
+      ],
+      finance: [
+        'Gevoeligheid opbrengst toetsen…',
+        'Bij 5% lagere verkoopprijs daalt de residuele grondwaarde met circa € 578.000',
+      ],
+      answer: `De belangrijkste risico's zijn planologisch en fysiek van aard: de archeologische dubbelbestemming en de geluidszone van de nabijgelegen spoorlijn vragen beide nog onderzoek, en kunnen tot vertraging of aanvullende eisen leiden. Financieel is het plan gevoelig voor de verkoopprijs: bij 5% lagere opbrengst daalt de residuele grondwaarde met circa € 578.000. Dit is verwerkt in de risico-deelscore (55/100).`,
+      sources: ['Dubbelbestemming — bestemmingsplan', 'Rekenmodel Planinzicht (gevoeligheidsanalyse)'],
+    },
+  };
+
+  let chatRunning = false;
+  function renderChatChips() {
+    document.getElementById('chat-chips').innerHTML = Object.values(CHAT_FLOWS).map((f) => `
+      <button type="button" data-flow="${f.chip}" class="chat-chip text-[12.5px] font-medium border border-line rounded-full px-3.5 py-2 hover:border-accent-600 hover:text-accent-700 transition-colors">${f.chip}</button>`).join('');
+    document.querySelectorAll('.chat-chip').forEach((btn) => btn.addEventListener('click', () => runChatFlow(matchFlow(btn.dataset.flow))));
+  }
+  function matchFlow(text) {
+    const t = text.toLowerCase();
+    return Object.values(CHAT_FLOWS).find((f) => f.trigger.some((kw) => t.includes(kw))) || null;
+  }
+  async function runChatFlow(flow) {
+    if (chatRunning) return;
+    const legalWrap = document.getElementById('agent-legal-steps');
+    const financeWrap = document.getElementById('agent-finance-steps');
+    const legalStatus = document.getElementById('agent-legal-status');
+    const financeStatus = document.getElementById('agent-finance-status');
+    const answerWrap = document.getElementById('chat-answer-wrap');
+    const answerEmpty = document.getElementById('chat-answer-empty');
+
+    if (!flow) {
+      answerEmpty.textContent = 'Deze vraag is nog niet gescript in de demo — probeer een van de voorbeeldvragen hieronder.';
+      answerEmpty.classList.remove('hidden');
+      answerWrap.classList.add('hidden');
+      return;
+    }
+
+    chatRunning = true;
+    legalWrap.innerHTML = ''; financeWrap.innerHTML = '';
+    answerWrap.classList.add('hidden'); answerEmpty.classList.add('hidden');
+    legalStatus.textContent = 'werkt…'; financeStatus.textContent = 'werkt…';
+
+    const legalSteps = flow.legal || [];
+    const financeSteps = flow.finance || [];
+    const maxLen = Math.max(legalSteps.length, financeSteps.length);
+
+    for (let i = 0; i < maxLen; i++) {
+      if (legalSteps[i]) appendStep(legalWrap, legalSteps[i]);
+      if (financeSteps[i]) appendStep(financeWrap, financeSteps[i]);
+      await sleep(620);
+    }
+    legalStatus.textContent = 'klaar'; financeStatus.textContent = 'klaar';
+    await sleep(300);
+
+    document.getElementById('chat-answer-text').textContent = flow.answer;
+    document.getElementById('chat-answer-sources').innerHTML = flow.sources.map((s) => `<span class="text-[11px] text-inkmuted bg-paper border border-line rounded-full px-2.5 py-1">${s}</span>`).join('');
+    answerWrap.classList.remove('hidden');
+    chatRunning = false;
+  }
+  function appendStep(wrap, text) {
+    const div = document.createElement('div');
+    div.className = 'agent-step text-[12.5px] text-inkmuted leading-snug flex gap-2';
+    div.innerHTML = `<span class="text-accent-600 shrink-0">·</span><span>${text}</span>`;
+    wrap.appendChild(div);
+    requestAnimationFrame(() => requestAnimationFrame(() => div.classList.add('show')));
+  }
+  const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
+  document.getElementById('chat-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    if (!input.value.trim()) return;
+    runChatFlow(matchFlow(input.value));
+    input.value = '';
+  });
+
+  /* ============================================================
+     RENDER: RAPPORT
+     ============================================================ */
+  function renderRapport() {
+    const totaal = BASE_TOTAAL;
+    const subs = DATA.score.base;
+    const rows = [
+      ['Planologisch', subs.planologisch, '25%'],
+      ['Financieel', Math.round(BASE_CALC.financieelScore), '25%'],
+      ['Fysiek', subs.fysiek, '20%'],
+      ['Risico', subs.risico, '15%'],
+      ['Markt', subs.markt, '15%'],
+    ];
+    document.getElementById('rapport-doc').innerHTML = `
+      <div class="flex items-center justify-between border-b border-line pb-6 mb-8">
+        <div>
+          <div class="text-[11px] text-inkfaint uppercase tracking-wide mb-1">Haalbaarheidsanalyse</div>
+          <h2 class="font-serif text-[24px]">${DATA.project.address}</h2>
+          <p class="text-[13px] text-inkmuted">${DATA.project.postcode} ${DATA.project.city} — ${DATA.project.area}</p>
+        </div>
+        <div class="text-right">
+          <div class="font-serif text-[40px] tnum leading-none">${Math.round(totaal)}</div>
+          <div class="text-[11px] text-inkfaint">van 100</div>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="font-serif text-[15px] mb-3">Deelscores</h3>
+        <table class="w-full text-[13px]">
+          <tbody>
+            ${rows.map(([label, val, w]) => `
+              <tr class="border-b border-line last:border-b-0">
+                <td class="py-2 text-inkmuted">${label}</td>
+                <td class="py-2 text-inkfaint text-right w-16">${w}</td>
+                <td class="py-2 text-right tnum font-medium w-12">${val}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="mb-8">
+        <h3 class="font-serif text-[15px] mb-3">Financiële onderbouwing</h3>
+        <table class="w-full text-[13px]">
+          <tbody>
+            <tr class="border-b border-line"><td class="py-2 text-inkmuted">Opbrengst (v.o.n.)</td><td class="py-2 text-right tnum">${euro(BASE_CALC.opbrengst)}</td></tr>
+            <tr class="border-b border-line"><td class="py-2 text-inkmuted">− Bouwkosten</td><td class="py-2 text-right tnum">${euro(BASE_CALC.bouwkostenTotaal)}</td></tr>
+            <tr class="border-b border-line"><td class="py-2 text-inkmuted">− Bijkomende kosten</td><td class="py-2 text-right tnum">${euro(BASE_CALC.bijkomend)}</td></tr>
+            <tr class="border-b border-line"><td class="py-2 text-inkmuted">− Winst en risico (15%)</td><td class="py-2 text-right tnum">${euro(BASE_CALC.winstRisico)}</td></tr>
+            <tr><td class="py-2 font-medium">Residuele grondwaarde</td><td class="py-2 text-right tnum font-medium">${euro(BASE_CALC.residueel)}</td></tr>
+          </tbody>
+        </table>
+        <p class="text-[11px] text-inkfaint mt-2">Gebaseerd op aannames voor verkoopprijs (€ 4.150/m² GBO) en bouwkosten (€ 1.950/m² BVO) — geen getoetste taxatie.</p>
+      </div>
+
+      <div class="border-t border-line pt-5 text-[11px] text-inkfaint leading-relaxed">
+        Dit rapport is automatisch gegenereerd door Planinzicht en dient ter oriëntatie. Waar cijfers op aannames zijn gebaseerd, is dit expliciet vermeld. Het vastgestelde bestemmingsplan en geldende regelgeving zijn te allen tijde leidend.
+        <div class="mt-3 flex items-center justify-between">
+          <span>Gegenereerd op 11 augustus 2026</span>
+          <span>Planinzicht — versie demo</span>
+        </div>
+      </div>`;
+
+    document.querySelectorAll('.export-btn').forEach((btn) => btn.addEventListener('click', () => showToast('Demo — export niet actief in deze preview')));
+  }
+
+  /* ============================================================
+     RENDER: SAMENWERKING
+     ============================================================ */
+  const activiteitSeed = [
+    { who: 'Jeroen — Ontwikkeling', text: 'Geluidsonderzoek opgevraagd bij extern adviesbureau.', when: '3 dagen geleden' },
+    { who: 'Signalering', text: 'Voorontwerp parapluplan "Parkeernormen 2026" gepubliceerd — relevant voor dit project.', when: '5 dagen geleden' },
+    { who: 'Marieke — Financiën', text: 'Residuele grondwaardeberekening afgerond en gedeeld met het team.', when: '1 week geleden' },
+  ];
+  function renderSamenwerking() {
+    document.getElementById('activiteit-list').innerHTML = activiteitSeed.map((a) => `
+      <div class="flex gap-3 text-[13px]">
+        <div class="w-7 h-7 rounded-full bg-accent-50 border border-accent-100 flex items-center justify-center text-[10.5px] font-semibold text-accent-700 shrink-0">${a.who.split(' ')[0].slice(0,2).toUpperCase()}</div>
+        <div>
+          <div><span class="font-medium">${a.who}</span> <span class="text-inkfaint">· ${a.when}</span></div>
+          <div class="text-inkmuted">${a.text}</div>
+        </div>
+      </div>`).join('');
+
+    const taken = [
+      { naam: 'Geluidsonderzoek', status: 'lopend' },
+      { naam: 'Archeologisch vooronderzoek', status: 'gepland' },
+      { naam: 'Haalbaarheidsscan financieel', status: 'afgerond' },
+    ];
+    const statusStyle = { afgerond: 'bg-sage-50 text-sage', lopend: 'bg-ochre-50 text-ochre', gepland: 'bg-paper text-inkmuted' };
+    document.getElementById('taken-list').innerHTML = taken.map((t) => `
+      <div class="flex items-center justify-between border border-line rounded-lg px-4 py-3">
+        <span class="text-[13.5px] font-medium">${t.naam}</span>
+        <span class="text-[11px] font-medium rounded-full px-2.5 py-1 ${statusStyle[t.status]}">${t.status}</span>
+      </div>`).join('');
+  }
+  document.getElementById('note-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('note-input');
+    if (!input.value.trim()) return;
+    activiteitSeed.unshift({ who: 'U', text: input.value.trim(), when: 'zojuist' });
+    renderSamenwerking();
+    input.value = '';
+  });
+
+  /* ---------- toast ---------- */
+  let toastTimer;
+  function showToast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  /* ============================================================
+     INIT
+     ============================================================ */
+  renderDashboard();
+  renderAcquisitie();
+  renderBestemmingStatic();
+  renderCalc(DATA.financieel.bouwkostenBase, DATA.financieel.verkoopprijsBase);
+  wireSliders();
+  renderChatChips();
+  renderRapport();
+  renderSamenwerking();
+  showView('dashboard');
+  </script>
+</body>

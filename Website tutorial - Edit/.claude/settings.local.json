@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm -v)",
+      "Read(//c/Users/melle/AppData/Local/Temp/**)",
+      "Read(//c/Users/melle/.cache/**)",
+      "Bash(npm ls *)",
+      "Read(//c/Program Files/Google/Chrome/Application//**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Google/Chrome/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Microsoft/Edge/Application//**)",
+      "Read(//c/Program Files/Microsoft/Edge/**)",
+      "Bash(node -e ' *)",
+      "Bash(node screenshot.mjs http://localhost:3000/index-v2.html sidebar-nl)",
+      "Bash(node \"C:/Users/melle/AppData/Local/Temp/claude/c--Claude-Sandbox-Website-tutorial-Website-tutorial---Edit/8ed92115-335c-44bb-a11d-4a6675c5faf1/scratchpad/click-test.mjs\")"
+    ]
+  }
+}
